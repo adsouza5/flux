@@ -3,7 +3,7 @@
 /* ── CSS variables (updated by JS per type) ─────────────────────── */
 .flux-root {
   --ar: 16; --ag: 185; --ab: 129;
-  min-height: 100vh;
+  height: 100vh;
   background: #07101a;
   color: #e2e8f0;
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -306,9 +306,7 @@
   font-size: 26px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
-  color: rgba(var(--ar),var(--ag),var(--ab),1);
   letter-spacing: -0.02em;
-  transition: color 0.5s;
 }
 
 .flux-result-unit {
@@ -334,9 +332,6 @@
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(var(--ar),var(--ag),var(--ab),0.08);
-  border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.18);
-  color: rgba(var(--ar),var(--ag),var(--ab),0.9);
 }
 
 .flux-result-date {

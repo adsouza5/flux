@@ -332,13 +332,13 @@ export default function FluxShowcase() {
               )}
 
               {msg.kind === 'result' && (
-                <div
-                  className="flux-bubble"
-                  style={{ '--ar': msg.meta.color[0], '--ag': msg.meta.color[1], '--ab': msg.meta.color[2] }}
-                >
+                <div className="flux-bubble">
                   <div className="flux-result">
                     <div className="flux-result-head">
-                      <span className="flux-result-value">{formatResult(msg.result)}</span>
+                      <span
+                        className="flux-result-value"
+                        style={{ color: `rgb(${msg.meta.color.join(',')})` }}
+                      >{formatResult(msg.result)}</span>
                       <span className="flux-result-unit">{msg.to}</span>
                     </div>
                     <div className="flux-result-eq">
@@ -350,7 +350,14 @@ export default function FluxShowcase() {
                       </div>
                     )}
                     <div className="flux-result-meta">
-                      <span className="flux-result-badge">{msg.meta.icon} {msg.meta.label}</span>
+                      <span
+                        className="flux-result-badge"
+                        style={{
+                          color: `rgb(${msg.meta.color.join(',')})`,
+                          background: `rgba(${msg.meta.color.join(',')},0.08)`,
+                          border: `1px solid rgba(${msg.meta.color.join(',')},0.18)`,
+                        }}
+                      >{msg.meta.icon} {msg.meta.label}</span>
                       {msg.date && <span className="flux-result-date">Rate: {msg.date}</span>}
                       <button className="flux-flip" onClick={() => handleFlip(msg)}>⇄ Reverse</button>
                     </div>

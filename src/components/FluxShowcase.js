@@ -206,7 +206,7 @@ export default function FluxShowcase() {
     setAmount('');
   }, []);
 
-  const { state: whisperState, loadPct, toggle: toggleMic, analyserRef } = useWhisper({
+  const { state: whisperState, loadPct, toggle: toggleMic, toggleWake, analyserRef } = useWhisper({
     onResult: useCallback((text) => {
       const parsed = parseQuery(text);
       if (parsed) {
@@ -231,7 +231,10 @@ export default function FluxShowcase() {
 
   const micBusy   = whisperState !== 'idle';
   const micActive = whisperState === 'recording';
-  const statusText = whisperState === 'recording' ? 'Listening — click mic to stop' : '';
+  const wakeActive = whisperState === 'wake';
+  const statusText = whisperState === 'recording' ? 'Listening — click mic to stop'
+                   : whisperState === 'wake'      ? 'Say "convert …" anytime'
+                   : '';
 
   return (
     <div
@@ -409,6 +412,7 @@ export default function FluxShowcase() {
             <button
               className={`flux-mic${micActive ? ' flux-mic--listening' : ''}`}
               onClick={toggleMic}
+              disabled={wakeActive}
               title={micActive ? MIC_LABEL.recording : MIC_LABEL.idle}
             >
               {micActive ? (
@@ -423,6 +427,20 @@ export default function FluxShowcase() {
               )}
             </button>
             <button
+              className={`flux-wake-btn${wakeActive ? ' flux-wake-btn--active' : ''}`}
+              onClick={toggleWake}
+              disabled={micActive}
+              title={wakeActive ? 'Disable wake word' : 'Enable wake word — say "convert …"'}
+            >
+              {wakeActive && <span className="flux-wake-dot" />}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M5 10a7 7 0 0 0 14 0"/>
+                <path d="M8 21h8M12 17v4"/>
+                <path d="M2 8c0 0 1-2 4-2M22 8c0 0-1-2-4-2"/>
+              </svg>
+            </button>
+            <button
               className="flux-send"
               onClick={handleTextSend}
               disabled={!textInput.trim() || loading || micBusy}
@@ -433,7 +451,11 @@ export default function FluxShowcase() {
               </svg>
             </button>
           </div>
-          <div className="flux-hint">Voice powered by Web Speech API · Chrome &amp; Edge · speak any conversion naturally</div>
+          <div className="flux-hint">
+            {wakeActive
+              ? 'Wake word active — just say "convert 100 km to miles" naturally'
+              : 'Voice via Web Speech API · Chrome & Edge · or click mic to record'}
+          </div>
         </div>
       </div>
     </div>

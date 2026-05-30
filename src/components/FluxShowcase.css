@@ -578,6 +578,47 @@
   to   { transform: scale(1.35); opacity: 0; }
 }
 
+/* ── Wake word button ────────────────────────────────────────────── */
+.flux-wake-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255,255,255,0.04);
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  position: relative;
+}
+.flux-wake-btn:hover:not(:disabled) {
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.4);
+  color: rgba(var(--ar),var(--ag),var(--ab),1);
+}
+.flux-wake-btn--active {
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.5);
+  background: rgba(var(--ar),var(--ag),var(--ab),0.10);
+  color: rgba(var(--ar),var(--ag),var(--ab),1);
+}
+.flux-wake-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.flux-wake-dot {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(var(--ar),var(--ag),var(--ab),1);
+  animation: wake-pulse 1.5s ease-in-out infinite;
+}
+@keyframes wake-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+.flux-status--wake { color: rgba(var(--ar),var(--ag),var(--ab),0.85); font-style: normal; }
+
 .flux-send {
   width: 36px; height: 36px;
   border-radius: 10px;

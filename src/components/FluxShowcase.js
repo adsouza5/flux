@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { convert, formatResult, TYPE_META, UNIT_OPTIONS } from './fluxConvert';
 import { parseQuery } from './fluxParser';
@@ -8,6 +8,64 @@ import { track } from '../../analytics';
 import './FluxShowcase.css';
 
 const TYPES = Object.keys(TYPE_META);
+
+// ── Custom dropdown — fully styled, no OS chrome ──────────────────
+function UnitSelect({ options, value, onChange }) {
+  const [open, setOpen]     = useState(false);
+  const [above, setAbove]   = useState(false);
+  const wrapRef   = useRef(null);
+  const listRef   = useRef(null);
+  const selected  = options.find(o => o.value === value) || options[0];
+
+  // Decide whether the list opens up or down based on available space
+  useLayoutEffect(() => {
+    if (!open || !wrapRef.current || !listRef.current) return;
+    const rect     = wrapRef.current.getBoundingClientRect();
+    const listH    = listRef.current.offsetHeight;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    setAbove(spaceBelow < listH + 8 && rect.top > listH + 8);
+  }, [open]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (!wrapRef.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const pick = (val) => { onChange(val); setOpen(false); };
+
+  return (
+    <div className={`fxd-wrap${open ? ' fxd-open' : ''}`} ref={wrapRef}>
+      <button
+        className="fxd-trigger"
+        onClick={() => setOpen(o => !o)}
+        type="button"
+      >
+        <span className="fxd-value">{selected?.label ?? '—'}</span>
+        <span className="fxd-chevron">{open ? '▴' : '▾'}</span>
+      </button>
+
+      {open && (
+        <ul
+          ref={listRef}
+          className={`fxd-list${above ? ' fxd-list--above' : ''}`}
+        >
+          {options.map(o => (
+            <li
+              key={o.value}
+              className={`fxd-item${o.value === value ? ' fxd-item--active' : ''}`}
+              onMouseDown={() => pick(o.value)}
+            >
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 const SUGGESTIONS = {
   length:      ['100 km to miles', '6 feet to meters', '1 inch to centimeters'],
@@ -30,8 +88,8 @@ const SUGGESTIONS = {
 };
 
 const MIC_LABEL = {
-  idle: 'Speak a conversion', loading: 'Loading voice model…',
-  recording: 'Recording — click to stop', transcribing: 'Transcribing…',
+  idle: 'Speak a conversion',
+  recording: 'Listening — click to stop',
 };
 
 let msgId = 0;
@@ -150,7 +208,6 @@ export default function FluxShowcase() {
 
   const { state: whisperState, loadPct, toggle: toggleMic, analyserRef } = useWhisper({
     onResult: useCallback((text) => {
-      setTextInput(text);
       const parsed = parseQuery(text);
       if (parsed) {
         setActiveType(parsed.type);
@@ -174,11 +231,7 @@ export default function FluxShowcase() {
 
   const micBusy   = whisperState !== 'idle';
   const micActive = whisperState === 'recording';
-  const statusText = whisperState === 'loading'
-    ? `Loading voice model… ${loadPct > 0 ? `${loadPct}%` : ''}`
-    : whisperState === 'recording'   ? 'Recording — click mic to stop'
-    : whisperState === 'transcribing' ? 'Transcribing…'
-    : '';
+  const statusText = whisperState === 'recording' ? 'Listening — click mic to stop' : '';
 
   return (
     <div
@@ -220,17 +273,7 @@ export default function FluxShowcase() {
 
         {/* Converter controls */}
         <div className="flux-converter">
-          <div className="flux-select-wrap">
-            <select
-              className="flux-select"
-              value={fromUnit}
-              onChange={e => setFromUnit(e.target.value)}
-            >
-              {units.map(u => (
-                <option key={u.value} value={u.value}>{u.label}</option>
-              ))}
-            </select>
-          </div>
+          <UnitSelect options={units} value={fromUnit} onChange={setFromUnit} />
 
           <div className="flux-amount-wrap">
             <input
@@ -246,17 +289,7 @@ export default function FluxShowcase() {
 
           <span className="flux-arrow">→</span>
 
-          <div className="flux-select-wrap">
-            <select
-              className="flux-select"
-              value={toUnit}
-              onChange={e => setToUnit(e.target.value)}
-            >
-              {units.map(u => (
-                <option key={u.value} value={u.value}>{u.label}</option>
-              ))}
-            </select>
-          </div>
+          <UnitSelect options={units} value={toUnit} onChange={setToUnit} />
 
           <button
             className="flux-swap"
@@ -351,14 +384,13 @@ export default function FluxShowcase() {
               value={textInput}
               onChange={e => setTextInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleTextSend(); }}}
-              placeholder={micBusy ? MIC_LABEL[whisperState] : 'Or type naturally: "100 km to miles"'}
+              placeholder={micActive ? MIC_LABEL.recording : 'Or type naturally: "100 km to miles"'}
               disabled={micBusy}
             />
             <button
-              className={`flux-mic${micActive ? ' flux-mic--listening' : ''}${whisperState === 'loading' || whisperState === 'transcribing' ? ' flux-mic--busy' : ''}`}
+              className={`flux-mic${micActive ? ' flux-mic--listening' : ''}`}
               onClick={toggleMic}
-              disabled={whisperState === 'loading' || whisperState === 'transcribing'}
-              title={MIC_LABEL[whisperState]}
+              title={micActive ? MIC_LABEL.recording : MIC_LABEL.idle}
             >
               {micActive ? (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
@@ -382,7 +414,7 @@ export default function FluxShowcase() {
               </svg>
             </button>
           </div>
-          <div className="flux-hint">Voice powered by Whisper · runs locally in your browser · no data sent to any server</div>
+          <div className="flux-hint">Voice powered by Web Speech API · Chrome &amp; Edge · speak any conversion naturally</div>
         </div>
       </div>
     </div>

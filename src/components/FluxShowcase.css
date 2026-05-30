@@ -125,42 +125,49 @@
   white-space: nowrap;
 }
 
-/* ── Type selector ───────────────────────────────────────────────── */
-.flux-type-bar {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 12px 0 8px;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-.flux-type-bar::-webkit-scrollbar { display: none; }
-
-.flux-type-pill {
-  display: flex;
-  align-items: center;
+/* ── Type selector grid ──────────────────────────────────────────── */
+.flux-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
   gap: 5px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: #64748b;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.18s;
+  padding: 10px 0 6px;
   flex-shrink: 0;
 }
-.flux-type-pill:hover {
-  border-color: rgba(var(--ar),var(--ag),var(--ab),0.35);
+
+.flux-type-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.flux-type-cell:hover {
+  background: rgba(var(--ar),var(--ag),var(--ab),0.06);
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.20);
   color: #94a3b8;
 }
-.flux-type-pill.active {
-  background: rgba(var(--ar),var(--ag),var(--ab),0.12);
-  border-color: rgba(var(--ar),var(--ag),var(--ab),0.45);
-  color: rgba(var(--ar),var(--ag),var(--ab),1);
+.flux-type-cell.active {
+  background: rgba(var(--cr),var(--cg),var(--cb),0.14);
+  border-color: rgba(var(--cr),var(--cg),var(--cb),0.40);
 }
-.flux-type-pill-icon { font-size: 12px; }
+.flux-type-cell-icon { font-size: 18px; line-height: 1; }
+.flux-type-cell-label {
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.flux-type-cell.active .flux-type-cell-label {
+  color: rgba(var(--cr),var(--cg),var(--cb),1);
+}
 
 /* ── Converter card ──────────────────────────────────────────────── */
 .flux-converter {

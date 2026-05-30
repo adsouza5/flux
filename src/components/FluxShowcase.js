@@ -87,6 +87,11 @@ const SUGGESTIONS = {
   currency:    ['100 USD to EUR', '1000 JPY to USD', '50 GBP to euros'],
 };
 
+const TYPE_SHORT = {
+  mass: 'Weight', digital: 'Storage', fuel: 'Fuel',
+  temperature: 'Temp', frequency: 'Freq',
+};
+
 const MIC_LABEL = {
   idle: 'Speak a conversion',
   recording: 'Listening — click to stop',
@@ -267,20 +272,22 @@ export default function FluxShowcase() {
         </header>
 
         {/* Type selector */}
-        <div className="flux-type-bar">
+        <div className="flux-type-grid">
           {TYPES.map(t => {
             const m = TYPE_META[t];
+            const active = activeType === t;
             return (
               <button
                 key={t}
-                className={`flux-type-pill${activeType === t ? ' active' : ''}`}
+                className={`flux-type-cell${active ? ' active' : ''}`}
                 onClick={() => handleTypeChange(t)}
-                style={activeType === t ? {
-                  '--ar': m.color[0], '--ag': m.color[1], '--ab': m.color[2],
+                style={active ? {
+                  '--cr': m.color[0], '--cg': m.color[1], '--cb': m.color[2],
                 } : {}}
+                title={m.label}
               >
-                <span className="flux-type-pill-icon">{m.icon}</span>
-                {m.label}
+                <span className="flux-type-cell-icon">{m.icon}</span>
+                <span className="flux-type-cell-label">{TYPE_SHORT[t] ?? m.label}</span>
               </button>
             );
           })}

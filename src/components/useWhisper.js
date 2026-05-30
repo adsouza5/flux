@@ -23,10 +23,8 @@ async function getTranscriber(onProgress) {
   return _loadPromise;
 }
 
-// Whisper hallucinates these on silence / noise — filter them out
-const HALLUCINATIONS = /^\s*(\[.*?\]|\(.*?\)|thanks?\.?|you\.?|thank you\.?|\.+)\s*$/i;
+const HALLUCINATIONS = /^\s*(\[.*?\]|\(.*?\)|thanks?\.?|you\.?|thank you\.?|\.+|uh+|um+)\s*$/i;
 
-// Pick the best supported MIME type for this browser
 function bestMimeType() {
   const candidates = [
     'audio/webm;codecs=opus',
@@ -38,37 +36,33 @@ function bestMimeType() {
   return candidates.find(t => MediaRecorder.isTypeSupported(t)) || '';
 }
 
-// Normalize float32 audio to [-1, 1] by peak
-function normalize(arr) {
-  let peak = 0;
-  for (let i = 0; i < arr.length; i++) {
-    const a = Math.abs(arr[i]);
-    if (a > peak) peak = a;
-  }
-  if (peak > 0.001) {
-    const out = new Float32Array(arr.length);
-    for (let i = 0; i < arr.length; i++) out[i] = arr[i] / peak;
-    return out;
-  }
-  return arr;
-}
-
-// RMS loudness — detect if the recording contains actual sound
 function rms(arr) {
   let sum = 0;
   for (let i = 0; i < arr.length; i++) sum += arr[i] * arr[i];
   return Math.sqrt(sum / arr.length);
 }
 
+// Boost quiet audio to a target RMS level, clamped to [-1, 1]
+function amplifyToTarget(arr, targetRms = 0.15) {
+  const level = rms(arr);
+  if (level < 0.00001) return arr; // completely silent — don't touch
+  const gain = Math.min(targetRms / level, 12); // up to 12× boost, never clip
+  const out = new Float32Array(arr.length);
+  for (let i = 0; i < arr.length; i++) {
+    out[i] = Math.max(-1, Math.min(1, arr[i] * gain));
+  }
+  return out;
+}
+
 export function useWhisper({ onResult, onError }) {
   const [state, setState]     = useState('idle');
   const [loadPct, setLoadPct] = useState(0);
-  const recorderRef  = useRef(null);
-  const chunksRef    = useRef([]);
-  const streamRef    = useRef(null);
-  const audioCtxRef  = useRef(null);
-  const analyserRef  = useRef(null);
-  const startTimeRef = useRef(0);
+  const recorderRef   = useRef(null);
+  const chunksRef     = useRef([]);
+  const streamRef     = useRef(null);
+  const audioCtxRef   = useRef(null);
+  const analyserRef   = useRef(null);
+  const startTimeRef  = useRef(0);
 
   const start = useCallback(async () => {
     setState('loading');
@@ -94,7 +88,6 @@ export function useWhisper({ onResult, onError }) {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          // Request 16 kHz — browsers may honour it or resample
           sampleRate: { ideal: 16000 },
         },
         video: false,
@@ -105,106 +98,115 @@ export function useWhisper({ onResult, onError }) {
       return;
     }
 
-    streamRef.current  = stream;
-    chunksRef.current  = [];
+    streamRef.current   = stream;
+    chunksRef.current   = [];
     startTimeRef.current = Date.now();
 
-    // Wire analyser for the visualizer
+    // ── Audio graph ──────────────────────────────────────────────
+    // source → gain (4×) → analyser → dest (recorded)
+    //                     ↘ (also feeds analyser for visualizer)
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
+
+    const source  = audioCtx.createMediaStreamSource(stream);
+
+    // Pre-amplify the mic signal before recording — this is the key fix.
+    // The MediaRecorder gets the boosted stream, so Whisper sees a strong signal.
+    const gain    = audioCtx.createGain();
+    gain.gain.value = 4;
+
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.75;
-    audioCtx.createMediaStreamSource(stream).connect(analyser);
     analyserRef.current = analyser;
 
+    // MediaStreamDestinationNode lets us record the processed audio
+    const dest = audioCtx.createMediaStreamDestination();
+
+    source.connect(gain);
+    gain.connect(analyser);
+    gain.connect(dest);
+
     const mimeType = bestMimeType();
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+    // Record from the amplified destination stream, not the raw mic stream
+    const recorder = new MediaRecorder(dest.stream, mimeType ? { mimeType } : {});
     recorderRef.current = recorder;
 
-    // Collect data every 250 ms so we always have something even on short clips
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
 
     recorder.onstop = async () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => t.stop());
       analyserRef.current = null;
       audioCtxRef.current?.close();
       setState('transcribing');
 
-      const duration = Date.now() - startTimeRef.current;
-
       try {
-        const usedMime = recorder.mimeType || mimeType || 'audio/webm';
-        const blob = new Blob(chunksRef.current, { type: usedMime });
+        const usedMime  = recorder.mimeType || mimeType || 'audio/webm';
+        const blob      = new Blob(chunksRef.current, { type: usedMime });
 
-        if (blob.size < 1000) {
-          onError('Recording too short — hold the button and speak clearly.');
+        if (blob.size < 500) {
+          onError('Recording too short — hold the button and speak.');
           setState('idle');
           return;
         }
 
         const arrayBuffer = await blob.arrayBuffer();
 
-        // Decode at 16 kHz — the sample rate Whisper expects
-        const decodeCtx = new AudioContext({ sampleRate: 16000 });
-        let audioBuffer;
+        // Decode at exactly 16 kHz (Whisper's expected sample rate)
+        let float32;
         try {
-          audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
+          const decodeCtx  = new AudioContext({ sampleRate: 16000 });
+          const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
+          await decodeCtx.close();
+          float32 = audioBuffer.getChannelData(0);
         } catch {
-          // Safari / Firefox sometimes need a plain AudioContext for decoding
-          const fallbackCtx = new AudioContext();
-          const rawBuffer   = await fallbackCtx.decodeAudioData(arrayBuffer.slice(0));
-          // Manually resample to 16 kHz
-          const offlineCtx  = new OfflineAudioContext(1, Math.ceil(rawBuffer.duration * 16000), 16000);
-          const src          = offlineCtx.createBufferSource();
-          src.buffer         = rawBuffer;
-          src.connect(offlineCtx.destination);
+          // Fallback: decode at native rate then resample offline
+          const fallback  = new AudioContext();
+          const rawBuf    = await fallback.decodeAudioData(arrayBuffer.slice(0));
+          const frames    = Math.ceil(rawBuf.duration * 16000);
+          const offline   = new OfflineAudioContext(1, frames, 16000);
+          const src       = offline.createBufferSource();
+          src.buffer      = rawBuf;
+          src.connect(offline.destination);
           src.start(0);
-          audioBuffer = await offlineCtx.startRendering();
-          await fallbackCtx.close();
-        } finally {
-          await decodeCtx.close().catch(() => {});
+          const resampled = await offline.startRendering();
+          await fallback.close();
+          float32 = resampled.getChannelData(0);
         }
 
-        const raw = audioBuffer.getChannelData(0);
+        // Boost quiet speech to a consistent level before handing to Whisper
+        const boosted = amplifyToTarget(float32);
 
-        // Sanity check: if RMS is near zero the mic wasn't picking up anything
-        if (rms(raw) < 0.001 && duration < 2000) {
-          onError('No audio detected — check your microphone level and try again.');
-          setState('idle');
-          return;
-        }
-
-        const float32 = normalize(raw);
-
-        const output = await transcriber(float32, {
+        const output = await transcriber(boosted, {
           language: 'english',
           task: 'transcribe',
-          // Raise the beam width slightly for better accuracy
           num_beams: 2,
-          // Suppress timestamp tokens so output is clean text
           return_timestamps: false,
+          // Lower Whisper's own silence gate — default 0.6 is too aggressive
+          no_speech_threshold: 0.2,
+          // Allow lower-confidence output through
+          logprob_threshold: -2.0,
         });
 
         const text = (output.text || '').trim();
 
         if (!text || HALLUCINATIONS.test(text)) {
-          onError('Couldn\'t make out what you said — try speaking a bit louder or closer to the mic.');
+          onError('Couldn\'t make that out — try speaking a bit slower or closer.');
           setState('idle');
           return;
         }
 
         onResult(text);
-      } catch (err) {
+      } catch {
         onError('Transcription failed — please try again.');
       } finally {
         setState('idle');
       }
     };
 
-    recorder.start(250); // collect chunks every 250 ms
+    recorder.start(200);
     setState('recording');
   }, [onResult, onError]);
 

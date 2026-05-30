@@ -67,27 +67,62 @@
 /* ── Header ─────────────────────────────────────────────────────── */
 .flux-header {
   text-align: center;
-  padding: 36px 0 16px;
+  padding: 28px 0 14px;
   flex-shrink: 0;
 }
 
-.flux-header h1 {
-  font-size: 30px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0 0 6px;
-  letter-spacing: -0.02em;
+.flux-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-bottom: 8px;
 }
 
-.flux-header h1 span {
+.flux-logomark {
+  width: 26px;
+  height: 20px;
   color: rgba(var(--ar),var(--ag),var(--ab),1);
   transition: color 0.5s;
+  flex-shrink: 0;
 }
 
-.flux-header p {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0;
+.flux-wordmark {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #f1f5f9;
+  line-height: 1;
+  user-select: none;
+}
+
+.flux-tagline {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #475569;
+  margin: 0 0 12px;
+}
+
+.flux-header-pills {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.flux-header-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: #334155;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 /* ── Type selector ───────────────────────────────────────────────── */
@@ -132,49 +167,117 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(10,18,28,0.70);
+  border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.15);
   border-radius: 14px;
   padding: 14px 16px;
   flex-shrink: 0;
   flex-wrap: wrap;
+  transition: border-color 0.5s;
 }
 
-.flux-select-wrap {
+/* ── Custom unit dropdown ─────────────────────────────────────── */
+.fxd-wrap {
   position: relative;
   flex: 1;
   min-width: 140px;
 }
 
-.flux-select {
+.fxd-trigger {
   width: 100%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(10,18,28,0.92);
+  border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.20);
   border-radius: 10px;
-  padding: 10px 32px 10px 12px;
-  color: #e2e8f0;
+  padding: 10px 12px;
+  color: #cbd5e1;
   font-size: 13px;
   font-family: 'JetBrains Mono', monospace;
-  outline: none;
-  appearance: none;
   cursor: pointer;
-  transition: border-color 0.2s;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fxd-trigger:hover,
+.fxd-open .fxd-trigger {
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.50);
+  box-shadow: 0 0 0 3px rgba(var(--ar),var(--ag),var(--ab),0.08);
+}
+
+.fxd-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.fxd-chevron {
+  color: rgba(var(--ar),var(--ag),var(--ab),0.65);
+  font-size: 10px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.fxd-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: #0a121c;
+  border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.25);
+  border-radius: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.fxd-list--above {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+/* Styled scrollbar — fully matches the dark background */
+.fxd-list::-webkit-scrollbar        { width: 5px; }
+.fxd-list::-webkit-scrollbar-track  { background: transparent; }
+.fxd-list::-webkit-scrollbar-thumb  {
+  background: rgba(var(--ar),var(--ag),var(--ab),0.30);
+  border-radius: 3px;
+}
+.fxd-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--ar),var(--ag),var(--ab),0.55);
+}
+/* Firefox */
+.fxd-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--ar),var(--ag),var(--ab),0.30) transparent;
+}
+
+.fxd-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #94a3b8;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
-.flux-select:focus {
-  border-color: rgba(var(--ar),var(--ag),var(--ab),0.45);
+.fxd-item:hover {
+  background: rgba(var(--ar),var(--ag),var(--ab),0.10);
+  color: #e2e8f0;
 }
-.flux-select option { background: #0f1a24; }
-
-.flux-select-wrap::after {
-  content: '▾';
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #475569;
-  font-size: 11px;
-  pointer-events: none;
+.fxd-item--active {
+  color: rgba(var(--ar),var(--ag),var(--ab),1);
+  background: rgba(var(--ar),var(--ag),var(--ab),0.08);
 }
 
 .flux-amount-wrap {
@@ -186,25 +289,38 @@
 
 .flux-amount {
   width: 110px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(10,18,28,0.92);
+  border: 1px solid rgba(var(--ar),var(--ag),var(--ab),0.20);
   border-radius: 10px;
   padding: 10px 12px;
-  color: #e2e8f0;
-  font-size: 14px;
+  color: rgba(var(--ar),var(--ag),var(--ab),1);
+  font-size: 15px;
+  font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
   outline: none;
   text-align: right;
   caret-color: rgba(var(--ar),var(--ag),var(--ab),1);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color-scheme: dark;
 }
-.flux-amount:focus { border-color: rgba(var(--ar),var(--ag),var(--ab),0.45); }
-.flux-amount::placeholder { color: #334155; }
+.flux-amount:hover {
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.40);
+}
+.flux-amount:focus {
+  border-color: rgba(var(--ar),var(--ag),var(--ab),0.65);
+  box-shadow: 0 0 0 3px rgba(var(--ar),var(--ag),var(--ab),0.10);
+}
+.flux-amount::placeholder { color: #2d4055; }
+/* Hide number spinner arrows — they look bad and clash with dark theme */
+.flux-amount::-webkit-inner-spin-button,
+.flux-amount::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.flux-amount[type=number] { -moz-appearance: textfield; }
 
 .flux-arrow {
-  color: #475569;
+  color: rgba(var(--ar),var(--ag),var(--ab),0.45);
   font-size: 16px;
   flex-shrink: 0;
+  transition: color 0.5s;
 }
 
 .flux-swap {
@@ -490,7 +606,7 @@
   .flux-layout { padding: 0 12px; }
   .flux-header h1 { font-size: 24px; }
   .flux-converter { gap: 6px; }
-  .flux-select-wrap { min-width: 120px; }
+  .fxd-wrap { min-width: 120px; }
   .flux-amount { width: 85px; }
   .flux-result-value { font-size: 20px; }
   .flux-convert-btn { padding: 10px 14px; }
@@ -498,7 +614,7 @@
 
 @media (max-width: 420px) {
   .flux-converter { flex-direction: column; align-items: stretch; }
-  .flux-amount-wrap, .flux-select-wrap { width: 100%; }
+  .flux-amount-wrap, .fxd-wrap { width: 100%; }
   .flux-amount { width: 100%; text-align: left; }
   .flux-convert-btn { width: 100%; text-align: center; }
 }

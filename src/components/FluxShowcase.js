@@ -217,7 +217,7 @@ export default function FluxShowcase() {
         runConvert({ type: parsed.type, from: parsed.from, to: parsed.to, amountVal: parsed.amount, label: text });
       } else {
         addMsg({ role: 'user', kind: 'text', text });
-        addMsg({ role: 'bot', kind: 'error', text: 'Could not parse that conversion. Try saying "100 kilometers to miles".' });
+        addMsg({ role: 'bot', kind: 'error', text: `Heard: "${text}" — could not parse. Try "100 kilometers to miles".` });
       }
     }, [runConvert, addMsg]),
     onError: useCallback((msg) => {
@@ -247,8 +247,20 @@ export default function FluxShowcase() {
       <div className="flux-layout">
         {/* Header */}
         <header className="flux-header">
-          <h1>Fl<span>u</span>x</h1>
-          <p>Universal converter · 17 types · type or speak any conversion</p>
+          <div className="flux-logo-row">
+            <svg className="flux-logomark" viewBox="0 0 24 18" fill="none" aria-hidden="true">
+              <path d="M2 5h16M18 5l-3.5-3M18 5l-3.5 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M22 13H6M6 13l3.5-3M6 13l3.5 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="flux-wordmark">FLUX</span>
+          </div>
+          <p className="flux-tagline">Universal Converter</p>
+          <div className="flux-header-pills">
+            <span className="flux-header-pill">17 types</span>
+            <span className="flux-header-pill">Voice input</span>
+            <span className="flux-header-pill">Live FX rates</span>
+            <span className="flux-header-pill">No account</span>
+          </div>
         </header>
 
         {/* Type selector */}

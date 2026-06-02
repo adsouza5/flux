@@ -1,18 +1,36 @@
 # Flux — Universal Unit & Currency Converter
 
-> 17 measurement types, live currency rates, and a voice interface — all running in the browser.
+> 17 conversion categories, live FX rates, and a voice interface — all running in the browser with no backend required.
 
-## Overview
+Live at **[www.iadamdsouza.com](https://www.iadamdsouza.com)**
 
-Flux converts between hundreds of units across 17 categories: length, mass, temperature, volume, speed, area, time, digital storage, pressure, energy, power, frequency, angle, force, torque, fuel economy, and live currency exchange. Queries can be typed in natural language or spoken — in-browser **Whisper** transcribes audio locally so audio never leaves the device. Live FX rates are fetched from the **Frankfurter** public API. A **Web Audio API** visualizer shifts colour dynamically per conversion category.
+## How It Works
+
+```
+User input  (typed or spoken)
+      │
+      ├─▶  Web Speech API  ─▶  browser-native transcription
+      │
+      └─▶  Whisper (transformers.js)  ─▶  in-browser WASM inference
+                                              (audio never leaves device)
+      │
+      ▼
+  NLP parser  (regex + token matching)
+      │
+      ├─▶  unit conversion  ─▶  local formula lookup
+      │
+      └─▶  currency conversion  ─▶  Frankfurter API (ECB, daily rates)
+                                            │
+                                       result + Web Audio visualizer
+```
 
 ## Features
 
-- **17 conversion categories** — hundreds of unit pairs
-- **Live currency rates** — Frankfurter API (ECB-sourced, updated daily)
-- **Voice input** — in-browser Whisper transcription, fully local (no audio uploaded)
-- **Natural language parsing** — understands "convert 5 miles to km" or "100 USD to EUR"
-- **Audio visualizer** — frequency-reactive bars, colour-coded per category
+- **17 conversion categories** — length, mass, temperature, volume, speed, area, time, digital storage, pressure, energy, power, frequency, angle, force, torque, fuel economy, currency
+- **Live FX rates** — Frankfurter API (ECB-sourced, updated daily)
+- **Voice input** — in-browser Whisper via transformers.js; audio processed locally, never uploaded
+- **Natural language parsing** — understands `convert 5 miles to km` or `100 USD to EUR`
+- **Audio visualizer** — Web Audio API frequency bars, colour-coded per conversion category
 - **Flip conversion** — one-click source/target swap
 - **Chat interface** — conversational history with suggestion chips
 
@@ -21,14 +39,21 @@ Flux converts between hundreds of units across 17 categories: length, mass, temp
 | Layer | Technology |
 |---|---|
 | Frontend | React |
-| Voice | OpenAI Whisper (in-browser via transformers.js) |
+| Voice (primary) | Web Speech API |
+| Voice (fallback) | OpenAI Whisper via transformers.js (WASM) |
 | Currency rates | Frankfurter API |
 | Audio | Web Audio API |
 | NLP parsing | Custom regex + token matching |
 
-## Live Demo
+## Local Development
 
-Available at [adamdsouza.com](https://adamdsouza.com) → Flux project card.
+```bash
+git clone https://github.com/adsouza5/flux
+cd flux
+npm install
+npm run dev
+# App on :5173
+```
 
 ## License
 
